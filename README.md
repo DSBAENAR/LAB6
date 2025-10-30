@@ -205,3 +205,33 @@ return (
 ```
 
 En este momento su cliente ya debe estar funcionando.
+
+![alt text](/readme/img/image4.png)
+
+Este componente renderiza un estado del canvas y el canvas. Note que el componente necesita dos renderizaciones para estar totalmente operativo. En la primera simplemente se crean los componentes y en la segunda se carga el canvas. El canvas solo se monta cuando ya se realizó una renderización, es decir cuando el método “componentDidMount” del ciclo de vida es llamado.
+No olvide cargar este componente en el editor:
+
+```jsx
+function Editor( {name}
+) {
+return (
+<div>
+<h1>Hello, {name}</h1>
+<hr/>
+<div id="toolstatus"></div>
+<hr/>
+<div id="container">
+<BBCanvas />
+</div>
+<hr/>
+<div id="info"></div>
+</div>
+);
+}
+```
+
+En este momento su cliente ya debe estar funcionando.
+
+## Ahora vamos a modificarlo para poder interactuar con el servidor usando web sockets
+
+Construyamos una función y clase que nos servirán para manejar la conexión. Note que estas clases son clases y funciones estándar de Js.
