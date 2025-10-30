@@ -71,3 +71,137 @@ public class Status {
 a:
 `localhost:8080/index.html`
 ![alt text](/readme/img/image2.png)
+
+## Ahora construimos el cliente Web
+
+El index.html sería. Solo contiene un elemento “div” con identificador root. A Partir
+de este elemento construiremos la aplicación. Observe que esta página se encarga
+de cargar las librerías necesarias y el único script dónde estarán nuestros
+componentes. Observe que solo usaremos un elemento JSX, es decir no usaremos
+archivos Js y JSX, esto facilita la depuración y el mantenimiento.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive BB</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.1/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.1/addons/p5.dom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.1/addons/p5.sound.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script type="text/babel" src="js/BBCanvas.jsx"></script>
+    <script type="text/babel" src="js/EditorComponent.jsx"></script>
+</body>
+</html>
+```
+
+## Construyamos el componente ReactJS paso a paso
+
+### Primero construimos una versión simple
+
+En el archivo js/bbComponents.jsx escriba:
+
+```jsx
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+<h1>Bienvenido</h1>
+);
+```
+
+Este componente ya crea una primera versión de la aplicación
+
+### Ahora extendamos una poco y iremos los elementos principales de la interfaz gráfica
+
+```jsx
+ function Editor({name}) {
+return (
+<div>
+<h1>Hello, {name}</h1>
+<hr/>
+<div id="toolstatus"></div>
+<hr/>
+<div id="container"></div>
+<hr/>
+<div id="info"></div>
+</div>
+);
+}
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+<Editor name="Daniel"/>
+);
+```
+
+![alt text](/readme/img/image3.png)
+
+Este elemento ya instancia un componente y muestra las partes principales de la
+aplicación. Observe que desde aquí es que estructuramos la pagina es decir si
+deseamos cambiar la interfaz cambiaremos los componentes y no las páginas.
+
+### Ahora creemos un componente para representar el canvas del tablero
+
+Copie este código en le mismo archivo de sus componentes
+
+```jsx
+function BBCanvas() {
+const [svrStatus, setSvrStatus] = React.useState({loadingState: 'Loading Canvas
+...'});
+const myp5 = React.useRef(null);
+const sketch = function (p) {
+let x = 100;
+let y = 100;
+p.setup = function () {
+p.createCanvas(700, 410);
+}
+p.draw = function () {
+if (p.mouseIsPressed === true) {
+p.fill(0, 0, 0);
+p.ellipse(p.mouseX, p.mouseY, 20, 20);
+}
+if (p.mouseIsPressed === false) {
+p.fill(255, 255, 255);
+}
+}
+};
+React.useEffect(() => {
+myp5.current = new p5(sketch, 'container');
+setSvrStatus({loadingState: 'Canvas Loaded'});
+}, []);
+return(
+<div>
+</div>);
+}
+<h4>Drawing status: {svrStatus.loadingState}</h4>
+```
+
+Este componente renderiza un estado del canvas y el canvas. Note que el componente necesita dos renderizaciones para estar totalmente operativo. En la primera simplemente se crean los componentes y en la segunda se carga el canvas. El canvas solo se monta cuando ya se realizó una renderización, es decir cuando el método “componentDidMount” del ciclo de vida es llamado.
+
+No olvide cargar este componente en el editor:
+
+```jsx
+function Editor( {name}
+) {
+return (
+<div>
+<h1>Hello, {name}</h1>
+<hr/>
+<div id="toolstatus"></div>
+<hr/>
+<div id="container">
+<BBCanvas />
+</div>
+<hr/>
+<div id="info"></div>
+</div>
+);
+}
+```
+
+En este momento su cliente ya debe estar funcionando.
