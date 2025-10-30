@@ -1,4 +1,4 @@
-package com.bbapp.bbapstarter.controller;
+package com.bbapp.bbapstarter.Configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

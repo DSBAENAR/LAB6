@@ -1,5 +1,3 @@
-import React from "react"
-import BBServiceURL from "./util/functions/BBServiceURL"
 function BBCanvas(){
     const [serverstatus,setServerStatus] = React.useState({
         loadingState:'Loading Canvas...'

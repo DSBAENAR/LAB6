@@ -1,5 +1,5 @@
 function BBServiceURL() {
-    return 'ws/localhost:8080/bbService'
+    return 'ws://localhost:8080/bbService'
 }
 
 class WSBBChannel{
@@ -10,6 +10,10 @@ class WSBBChannel{
         this.wsocket.onmessage = (evt) => this.onMessage(evt)
         this.wsocket.onerror = (evt) => this.onError(evt)
         this.receive = callback
+    }
+
+    onOpen(evt) {
+        console.log("In onOpen", evt);
     }
 
     onMessage(evt) {
