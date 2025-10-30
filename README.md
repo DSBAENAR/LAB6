@@ -235,3 +235,178 @@ En este momento su cliente ya debe estar funcionando.
 ## Ahora vamos a modificarlo para poder interactuar con el servidor usando web sockets
 
 Construyamos una función y clase que nos servirán para manejar la conexión. Note que estas clases son clases y funciones estándar de Js.
+
+```js
+function BBServiceURL() {
+    return 'ws/localhost:8080/bbService'
+}
+
+class WSBBChannel{
+    constructor(URL,callback){
+        this.URL = URL
+        this.wsocket = new WebSocket(URL)
+        this.wsocket.onopen = (evt) => this.onOpen(evt)
+        this.wsocket.onmessage = (evt) => this.onMessage(evt)
+        this.wsocket.onerror = (evt) => this.onError(evt)
+        this.receive = callback
+    }
+
+    onMessage(evt) {
+        console.log("In on message",evt)
+        if (evt.data != "Connection established."){
+            this.receive(evt.data)
+        }
+    }
+
+    onError(evt){
+        console.log("In on Error", evt)
+    }
+
+    send(x,y){
+        let msg = '{"x": ' + x + ', "y": ' + y +  "}"
+        console.log("sending: ", msg)
+        this.wsocket.send(msg)
+    }
+}
+```
+
+Modifiquemos el componente BBCanvas para utilizar este web socket
+
+```jsx
+function BBCanvas() {
+const [svrStatus, setSvrStatus] = React.useState({loadingState: 'Loading Canvas
+...'});
+const comunicationWS = React.useRef(null);
+const myp5 = React.useRef(null);
+const sketch = function (p) {
+let x = 100;
+let y = 100;
+p.setup = function () {
+p.createCanvas(700, 410);
+}
+p.draw = function () {
+if (p.mouseIsPressed === true) {
+p.fill(0, 0, 0);
+p.ellipse(p.mouseX, p.mouseY, 20, 20);
+comunicationWS.current.send(p.mouseX,p.mouseY);
+}
+if (p.mouseIsPressed === false) {
+p.fill(255, 255, 255);
+}
+}
+};
+React.useEffect(() => {
+myp5.current = new p5(sketch, 'container');
+setSvrStatus({loadingState: 'Canvas Loaded'});
+comunicationWS.current = new WSBBChannel(BBServiceURL(),
+(msg) => {
+var obj = JSON.parse(msg);
+console.log("On func call back ", msg);
+drawPoint(obj.x, obj.y);
+});
+return () => {
+console.log('Clossing connection ...')
+comunicationWS.current.close();
+};
+}, []);
+function drawPoint(x, y) {
+myp5.current.ellipse(x, y, 20, 20);
+}
+return(
+<div>
+</div>);
+}
+<h4>Drawing status: {svrStatus.loadingState}</h4>
+```
+
+## Antes de ejecutar vamos a crear los componentes del servidor
+
+### Primero el Endpoint
+
+```java
+package co.edu.escuelaing.interactiveblackboard.endpoints;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Logger;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
+import org.springframework.stereotype.Component;
+@Component
+@ServerEndpoint("/bbService")
+public class BBEndpoint {
+
+    private static final Logger logger = Logger.getLogger(BBEndpoint.class.getName());
+
+    static Queue<Session> queue = new ConcurrentLinkedQueue<>();
+
+    Session ownSession = null;
+
+    public void send(String msg) {
+        try {
+        for (Session session : queue) {
+        if (!session.equals(this.ownSession)) {
+        session.getBasicRemote().sendText(msg);
+        }
+        logger.log(Level.INFO, "Sent: {0}", msg);
+        }
+        } catch (IOException e) {
+        logger.log(Level.INFO, e.toString());
+        }
+    }
+
+    @OnMessage
+    public void processPoint(String message, Session session) {
+        System.out.println("Point received:" + message + ". From session: " + session);
+        this.send(message);
+    }
+
+    @OnOpen
+    public void openConnection(Session session) {
+        queue.add(session);
+        ownSession = session;
+        logger.log(Level.INFO, "Connection opened.");
+        try {
+            session.getBasicRemote().sendText("Connection established.");
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
+    }
+
+    @OnClose
+    public void closedConnection(Session session) {
+        queue.remove(session);
+        logger.log(Level.INFO, "Connection closed.");
+    }
+
+    @OnError
+    public void error(Session session, Throwable t) {
+        queue.remove(session);
+        logger.log(Level.INFO, t.toString());
+        logger.log(Level.INFO, "Connection error.");
+    }
+}
+```
+## Luego el configurador
+
+```java
+package co.edu.escuelaing.interactiveblackboard.configurator;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.web.socket.server.standard.ServerEndpointExporter;
+
+@Configuration
+@EnableScheduling
+public class BBConfigurator {
+    @Bean
+    public ServerEndpointExporter serverEndpointExporter() {
+    return new ServerEndpointExporter();
+    }
+}
+```
