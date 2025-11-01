@@ -410,3 +410,94 @@ public class BBConfigurator {
     }
 }
 ```
+
+## Despliegue en AWS EC2
+
+1. Nos dirigimos a la consola de AWS y creamos una instancia EC2 con Amazon Linu
+2. Agregamos el nombre para identificar la instancia
+![alt text](/readme/img/image5.png)
+3. Seleccionamos el tipo de instancia t2.micro (gratis)
+![alt text](/readme/img/image6.png)
+4. Creamos o usamos un par de llaves existente para acceder a la instancia
+
+- Seleccionamos crear un nuevo par de llaves
+![alt text](/readme/img/image7.png)
+- Damos un nombre al par de llaves y descargamos el archivo .pem
+![alt text](/readme/img/image10.png)
+
+5. Configuramos el grupo de seguridad para permitir tráfico HTTP (puerto 80), SSH (puerto 22) y HTTPs (puerto 443)
+![alt text](/readme/img/image9.png)
+
+6. Lanzamos la instancia y esperamos a que esté en estado "running"
+
+7. Nos conectamos a la instancia vía SSH usando la terminal. Damos permisos al archivo .pem y nos conectamos
+
+```bash
+ssh -i "path/to/your-key.pem" ec2-user@EC2_PUBLIC_IP
+```
+
+debe aparecer algo así:
+
+```bash
+  ,     #_
+   ~\_  ####_        Amazon Linux 2023
+  ~~  \_#####\
+  ~~     \###|
+  ~~       \#/ ___   https://aws.amazon.com/linux/amazon-linux-2023
+   ~~       V~' '->
+    ~~~         /
+      ~~._.   _/
+         _/ _/
+       _/m/'
+````
+
+9. Compilamos el proyecto y generamos el archivo .jar
+
+```bash
+mvn clean package
+```
+
+10. Subimos el archivo .jar a la instancia EC2 usando scp
+
+```bash
+scp -i "path/to/your-key.pem" target/bbapstarter-0.0.1-SNAPSHOT.jar ec2-user@EC2_PUBLIC_IP:~
+```
+
+11. En la instancia EC2, instalamos Java si no está instalado
+
+```bash
+sudo yum install java-17-amazon-corretto -y
+```
+
+12. Ejecutamos para correr la aplicación en segundo plano
+
+```bash
+nohup java -jar bbapstarter-0.0.1-SNAPSHOT.jar > nohup.out 2>&1 &
+```
+
+13. werificamos que el puerto 8080 esté escuchando
+
+```bash
+ss -tuln | grep 8080
+tcp   LISTEN 0      100                                  *:8080            *:*    users:(("java",pid=26423,fd=9))
+```
+
+14. Agregamos una regla al grupo de seguridad para permitir tráfico al puerto 8080
+
+Accedemos a la consola de AWS, vamos a la sección de EC2, seleccionamos "Security Groups" en el menú lateral, buscamos el grupo de seguridad asociado a nuestra instancia EC2 y agregamos una regla de entrada para permitir tráfico TCP al puerto 8080 desde cualquier dirección IP (0.0.0.0/0).
+![alt text](/readme/img/image11.png)
+
+15. Probamos accediendo a la aplicación desde el navegador
+
+```bash
+http://EC2_PUBLIC_IP:8080/status
+```
+
+![alt text](/readme/img/image12.png)
+
+16. Probamos el canvas interactivo accediendo a:
+
+```bash
+http://EC2_PUBLIC_IP:8080/index.html
+```
+[![Video]](/readme/img/PruebaCanavs.mp4)
