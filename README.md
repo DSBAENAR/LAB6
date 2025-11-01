@@ -500,4 +500,7 @@ http://EC2_PUBLIC_IP:8080/status
 ```bash
 http://EC2_PUBLIC_IP:8080/index.html
 ```
-[![Video]](/readme/img/PruebaCanavs.mp4)
+
+https://github.com/user-attachments/assets/3503eae9-8d6c-4e7f-bc76-a1e82bc379ff
+
+
